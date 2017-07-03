@@ -1,6 +1,7 @@
 ## PROJECT SPECIFIC EXCLUSIONS ######################
 .idea
 !/bin
+/mongodb
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Linux template
