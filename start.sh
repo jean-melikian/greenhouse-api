@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MONGO_DIR="${DIR}/mongodb"
+SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MONGO_DIR="${SRC_DIR}/mongodb"
 MONGO_PORT=27017
+
+cd ${SRC_DIR}
 
 if [ ! -d "${MONGO_DIR}" ]; then
   # Control will enter here if $DIRECTORY doesn't exist.
@@ -13,4 +15,4 @@ else
 fi
 
 echo "Launching MongoDB on port ${MONGO_PORT}..."
-mongod --dbpath ${MONGO_DIR} --port ${MONGO_PORT}
+mongod --dbpath ${MONGO_DIR} --port ${MONGO_PORT} --logpath ${SRC_DIR}/log/mongod.log
