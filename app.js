@@ -5,6 +5,8 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
+var admin = require("firebase-admin");
+var serviceAccount = require('./google-services.json');
 
 var index = require('./routes/index');
 var sensors = require('./routes/sensors');
@@ -22,6 +24,12 @@ promise.then(function () {
 }).catch(function (err) {
 	console.error(err)
 });
+
+var defaultApp = admin.initializeApp({
+	credential: admin.credential.cert(serviceAccount),
+	databaseURL: "https://greenhouse-20729.firebaseio.com"
+});
+console.log(defaultApp.name);
 
 
 app.use(logger('dev'));
@@ -48,7 +56,7 @@ app.use(function (err, req, res, next) {
 
 	// render the error page
 	res.status(err.status || 500);
-	res.render('error');
+	res.send('error');
 });
 
 module.exports = app;
