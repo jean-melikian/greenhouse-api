@@ -4,16 +4,18 @@
 
 var supertest = require('supertest')
 	, should = require('should')
-	, server = supertest.agent("http://localhost:9001");
+	, app = require('../app')
+	, server = supertest.agent(app);
 
 describe("Server launch test", function () {
-	it("should return every entries", function (done) {
+	it("should return json", function (done) {
 		server.get("/sensors")
-			.expect("Content-type", "application/json")
-			.expect(200)
-			.end(function (err, res) {
-				res.status.should.equal(200);
-				done()
-			});
+			.expect("Content-type", /application\/json/)
+			.expect(200, done)
 	});
+	it("should return 201 CREATED", function(done) {
+		server.post("/sensors", {"hygrometer": "999", "luminosity": "1024"})
+			.expect("Content-type", /application\/json/)
+			.expect(201, done)
+		});
 });
