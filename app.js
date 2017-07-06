@@ -6,7 +6,9 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
 var admin = require("firebase-admin");
-var serviceAccount = require('./google-services.json');
+console.log("Firebase private key path filepath:");
+console.log(process.env.FCM_SECRET_KEY_FILE_PATH);
+var serviceAccount = require(process.env.FCM_SECRET_KEY_FILE_PATH);
 
 var index = require('./routes/index');
 var sensors = require('./routes/sensors');
