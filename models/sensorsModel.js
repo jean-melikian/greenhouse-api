@@ -6,10 +6,12 @@ var mongoose = require('mongoose');
 
 var SensorsSchema = new mongoose.Schema({
 	hygrometer: {
-		type: Number
+		type: Number,
+		required: true
 	},
 	luminosity: {
-		type: Number
+		type: Number,
+		required: true
 	},
 	created_date: {
 		type: Date,

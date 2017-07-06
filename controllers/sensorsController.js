@@ -2,6 +2,7 @@
  * Created by ozone on 04/07/2017.
  */
 require('../models/sensorsModel');
+const util = require('util');
 var mongoose = require('mongoose');
 var Sensors = mongoose.model("Sensors");
 var admin = require('firebase-admin');
