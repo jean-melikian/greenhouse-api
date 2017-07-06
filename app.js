@@ -1,3 +1,6 @@
+const fcmSecretFilePath = process.env.FCM_SECRET_KEY_FILE_PATH;
+
+const util = require('util');
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -6,9 +9,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
 var admin = require("firebase-admin");
-console.log("Firebase private key path filepath:");
-console.log(process.env.FCM_SECRET_KEY_FILE_PATH);
-var serviceAccount = require(process.env.FCM_SECRET_KEY_FILE_PATH);
+var serviceAccount = require(fcmSecretFilePath);
 
 var index = require('./routes/index');
 var sensors = require('./routes/sensors');
@@ -26,6 +27,12 @@ promise.then(function () {
 }).catch(function (err) {
 	console.error(err)
 });
+
+if (serviceAccount) {
+	console.log(util.format("Successfully loaded the FCM secret key file from: [%s]", fcmSecretFilePath));
+} else {
+	console.log("Could not load the FCM secret key file as the environment variable FCM_SECRET_KEY_FILE_PATH is undefined...");
+}
 
 var defaultApp = admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount),
