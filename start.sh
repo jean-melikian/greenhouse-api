@@ -15,4 +15,6 @@ else
 fi
 
 echo "Launching MongoDB on port ${MONGO_PORT}..."
-mongod --dbpath ${MONGO_DIR} --port ${MONGO_PORT} --logpath ${SRC_DIR}/log/mongod.log
+#mongod --dbpath ${MONGO_DIR} --port ${MONGO_PORT} --logpath ${SRC_DIR}/log/mongod.log &
+mongod --dbpath ${MONGO_DIR} --fork --port ${MONGO_PORT} --logpath /dev/null &
+exit
