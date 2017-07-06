@@ -3,14 +3,9 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"prestart": "./start.sh",
-		"start": "node ./bin/www",
-		"poststop": "mongo admin --eval 'db.shutdownServer()' > /dev/null",
-		"test": "mocha",
-		"pretest": "./start.sh",
-		"posttest": "mongo admin --eval 'db.shutdownServer()' > /dev/null"
-
-
+		"start": "node ./bin/www &",
+		"poststart": "mocha",
+		"stop": "killall -SIGINT greenode"
 	},
 	"dependencies": {
 		"body-parser": "~1.17.1",
