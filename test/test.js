@@ -14,7 +14,8 @@ describe("Server launch test", function () {
 			.expect(200, done)
 	});
 	it("should return 201 CREATED", function(done) {
-		server.post("/sensors", {"hygrometer": "999", "luminosity": "1024"})
+		server.post("/sensors")
+			.send({"hygrometer": "999", "luminosity": "1024"})
 			.expect("Content-type", /application\/json/)
 			.expect(201, done)
 		});
