@@ -88,4 +88,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+	debug('This server\'s build name is ' + process.env.BUILD_NAME || 'dev');
 }
