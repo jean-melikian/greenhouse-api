@@ -13,22 +13,22 @@ var admin = require("firebase-admin");
 var index = require('./routes/index');
 var sensors = require('./routes/sensors');
 
-// - - - App init - - - - - - - - -
-// - - - FCM - - - - - - - - - - - - - -
-const fcmSecretFilePath = process.env.FCM_SECRET_KEY_FILE_PATH;
-var serviceAccount = require(fcmSecretFilePath);
-const fcmDbUrl = "https://greenhouse-20729.firebaseio.com";
-
-var mongoUri = 'mongodb://localhost/greenhouse-' + process.env.BUILD_NAME || 'dev';
-
-// -------------------------------------
-// - - - MAIN CODE - - - - - - - - - - -
+// - - - First app init - - - - - - - - -
 var app = express();
 app.set('build_config', process.env.BUILD_NAME || 'dev');
 app.set('debug_prefix', 'greenhouse-api:' + app.get('build_config'));
 var debug = require('debug')(app.get('debug_prefix'));
 process.title = util.format("greenode-%s", app.get('build_config'));
 
+// - - - FCM - - - - - - - - - - - - - -
+const fcmSecretFilePath = process.env.FCM_SECRET_KEY_FILE_PATH;
+var serviceAccount = require(fcmSecretFilePath);
+const fcmDbUrl = "https://greenhouse-20729.firebaseio.com";
+
+var mongoUri = util.format('mongodb://localhost/greenhouse-%s', app.get('build_config'));
+
+// -------------------------------------
+// - - - MAIN CODE - - - - - - - - - - -
 
 // Init MongoDB server
 mongoose.Promise = global.Promise;
@@ -37,7 +37,7 @@ var promise = mongoose.connect(mongoUri, {
 });
 
 promise.then(function () {
-	debug(util.format('Successfully connected to the MongoDB server: [%s]', mongoUri));
+	debug(util.format('Successfully connected to the [%s] MongoDB server: [%s]', app.get('build_config'), mongoUri));
 }).catch(function (err) {
 	console.error(err)
 });
@@ -54,7 +54,7 @@ var defaultApp = admin.initializeApp({
 	databaseURL: fcmDbUrl
 });
 
-// Init app
+// - - - Second app init - - - - - - - - -
 
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -62,7 +62,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Init routes
+// - - - Routes init - - - - - - - - -
 app.use('/', index);
 app.use('/sensors', sensors);
 
@@ -81,7 +81,7 @@ app.use(function (err, req, res, next) {
 
 	// render the error page
 	res.status(err.status || 500);
-	res.send('error');
+	res.send(err);
 });
 
 module.exports = app;
