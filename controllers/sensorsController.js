@@ -55,9 +55,9 @@ sensorsController.find = function (req, res, next) {
 	var query = queryParamsHandler(req.query);
 
 	query.exec(function (err, entries) {
-		if (err) return sendError(res, 404, err);
-		if (entries.length == 0)
-			res.sendStatus(204);
+		if (err) return sendError(res, 500, err);
+		if (entries.length == 0) return sendError(res, 204, {error_msg: "No content"});
+
 		var result = {
 			count: entries.length,
 			entries: entries
@@ -69,6 +69,7 @@ sensorsController.find = function (req, res, next) {
 sensorsController.findById = function (req, res, next) {
 	Sensors.findById(req.params.id).exec(function (err, entry) {
 		if (err) return sendError(res, 404, err);
+		if (!entry) return sendError(res, 204, {error_msg: "No content"});
 		res.status(200).send(entry);
 	});
 };
