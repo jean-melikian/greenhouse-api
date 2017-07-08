@@ -17,6 +17,11 @@ var SensorsSchema = new mongoose.Schema({
 		type: Date,
 		default: Date.now
 	}
-});
+})
+	.pre('save', function (next) {
+		this.hygrometer = (this.hygrometer * 100) / 1024;
+		this.luminosity = (this.luminosity * 100) / 1024;
+		next();
+	});
 
 module.exports = mongoose.model('Sensors', SensorsSchema);
