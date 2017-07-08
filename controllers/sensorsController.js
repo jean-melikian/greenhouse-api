@@ -6,21 +6,77 @@ const util = require('util');
 var mongoose = require('mongoose');
 var Sensors = mongoose.model("Sensors");
 var admin = require('firebase-admin');
-
 var sensorsController = {};
 
-sensorsController.list = function (req, res, next) {
-	Sensors.find({}).exec(function (err, entries) {
-		if (err) return res.status(400).send(err);
-		return res.status(200).send(entries);
+/**
+ *
+ * @param params: req.query arguments
+ * @returns A query to exec
+ */
+var queryParamsHandler = function (params) {
+	var projection = {};
+	var criterias = {};
+
+	if (params.types) {
+		var types = params.types.split(',');
+		types.forEach(function (type) {
+			projection[type] = true;
+		});
+		// Always return the created_date field
+		projection['created_date'] = true;
+	}
+
+	if (params.sincetime || params.untiltime) {
+		criterias = {
+			created_date: {}
+		}
+	}
+
+	if (params.sincetime && !isNaN(params.sincetime)) {
+		criterias['created_date']['$gte'] = new Date(parseInt(params.sincetime) * 1000).toISOString();
+	}
+
+	if (params.untiltime && !isNaN(params.sincetime)) {
+		criterias['created_date']['$lt'] = new Date(parseInt(params.untiltime) * 1000).toISOString();
+	}
+
+	// Return the query object
+	return Sensors.find(criterias, projection);
+};
+
+var sendError = function (res, httpCode, err) {
+	return res.status(httpCode).send({
+		error_msg: err.message
 	});
 };
 
-sensorsController.save = function (req, res, next) {
+sensorsController.find = function (req, res, next) {
+
+	var query = queryParamsHandler(req.query);
+
+	query.exec(function (err, entries) {
+		if (err) return sendError(res, 404, err);
+		var result = {
+			count: entries.length,
+			entries: entries
+		};
+		res.status(200).send(result);
+	});
+};
+
+sensorsController.findById = function (req, res, next) {
+	Sensors.findById(req.params.id).exec(function (err, entry) {
+		if (err) return sendError(res, 404, err);
+		res.status(200).send(entry);
+	});
+};
+
+sensorsController.saveEntry = function (req, res, next) {
 	var entry = new Sensors(req.body);
 
 	// The topic name can be optionally prefixed with "/topics/".
 	var topic = "greenhouse";
+
 
 	if (entry.hygrometer < 1000) {
 		var payload = {
@@ -46,10 +102,10 @@ sensorsController.save = function (req, res, next) {
 
 
 	entry.save(function (err) {
-		if (err) return res.status(400).send(util.format("sensorsController: %s", err));
+		if (err) return sendError(res, 400, err);
 		console.log("Successfully created an employee.");
-		return res.status(201).send(entry);
-	})
+		res.status(201).send(entry);
+	});
 };
 
 module.exports = sensorsController;

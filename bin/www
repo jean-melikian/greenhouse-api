@@ -4,10 +4,9 @@
  * Module dependencies.
  */
 
-process.title = "greenode";
 var app = require('../app');
-var debug = require('debug')('greenhouse-api:server');
 var http = require('http');
+var debug = require('debug')(app.get('debug_prefix'));
 
 /**
  * Get port from environment and store in Express.
@@ -88,4 +87,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+	debug('This server\'s build config name is ' + app.get('build_config'));
 }
