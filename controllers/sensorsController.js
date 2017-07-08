@@ -6,17 +6,67 @@ const util = require('util');
 var mongoose = require('mongoose');
 var Sensors = mongoose.model("Sensors");
 var admin = require('firebase-admin');
-
 var sensorsController = {};
 
-sensorsController.list = function (req, res, next) {
-	Sensors.find({}).exec(function (err, entries) {
-		if (err) return res.status(400).send(err);
-		return res.status(200).send(entries);
+/**
+ *
+ * @param params: req.query arguments
+ * @returns A query to exec
+ */
+var queryParamsHandler = function (params) {
+	var projection = {};
+	var criterias = {};
+
+	if (params.types) {
+		var types = params.types.split(',');
+		types.forEach(function (type) {
+			projection[type] = true;
+		});
+		// Always return the created_date field
+		projection['created_date'] = true;
+	}
+
+	if (params.sincetime) {
+		criterias['created_date']['$gte'] = new Date(params.aftertime * 1000);
+	}
+
+	if (params.totime) {
+		criterias['created_date']['$lt'] = new Date(params.totime * 1000);
+	}
+
+	// Return the query object
+	return Sensors.find(criterias, projection);
+};
+
+var sendError = function (res, httpCode, err) {
+	return res.status(httpCode).send({
+		err_code: err.statusCode,
+		err_msg: err.message
 	});
 };
 
-sensorsController.save = function (req, res, next) {
+sensorsController.find = function (req, res, next) {
+
+	var query = queryParamsHandler(req.query);
+
+	query.exec(function (err, entries) {
+		if (err) res.status(404).send(err.message);
+		var result = {
+			count: entries.length,
+			entries: entries
+		};
+		res.status(200).send(result);
+	});
+};
+
+sensorsController.findById = function (req, res, next) {
+	Sensors.findById(req.params.id).exec(function (err, entry) {
+		if (err) return res.status(404).send(err.message);
+		res.status(200).send(entry);
+	});
+};
+
+sensorsController.saveEntry = function (req, res, next) {
 	var entry = new Sensors(req.body);
 
 	// The topic name can be optionally prefixed with "/topics/".
@@ -45,10 +95,10 @@ sensorsController.save = function (req, res, next) {
 	}
 
 
-	entry.save(function (err) {
-		if (err) return res.status(400).send(util.format("sensorsController: %s", err));
+	entry.saveEntry(function (err) {
+		if (err) return sendError(res, 400, err);
 		console.log("Successfully created an employee.");
-		return res.status(201).send(entry);
+		res.status(201).send(entry);
 	})
 };
 

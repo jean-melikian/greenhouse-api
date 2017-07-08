@@ -5,7 +5,9 @@ var controller = require('../controllers/sensorsController');
 
 
 /* GET users listing. */
-router.get('/', controller.list)
-	.post('/', controller.save);
+router
+	.get('/', controller.find)
+	.get('/:id', controller.findById)
+	.post('/', controller.saveEntry);
 
 module.exports = router;
