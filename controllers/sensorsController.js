@@ -26,12 +26,18 @@ var queryParamsHandler = function (params) {
 		projection['created_date'] = true;
 	}
 
-	if (params.sincetime) {
-		criterias['created_date']['$gte'] = new Date(params.aftertime * 1000);
+	if (params.sincetime || params.untiltime) {
+		criterias = {
+			created_date: {}
+		}
 	}
 
-	if (params.totime) {
-		criterias['created_date']['$lt'] = new Date(params.totime * 1000);
+	if (params.sincetime && !isNaN(params.sincetime)) {
+		criterias['created_date']['$gte'] = new Date(parseInt(params.sincetime) * 1000).toISOString();
+	}
+
+	if (params.untiltime && !isNaN(params.sincetime)) {
+		criterias['created_date']['$lt'] = new Date(parseInt(params.untiltime) * 1000).toISOString();
 	}
 
 	// Return the query object
@@ -40,8 +46,7 @@ var queryParamsHandler = function (params) {
 
 var sendError = function (res, httpCode, err) {
 	return res.status(httpCode).send({
-		err_code: err.statusCode,
-		err_msg: err.message
+		error_msg: err.message
 	});
 };
 
@@ -50,7 +55,9 @@ sensorsController.find = function (req, res, next) {
 	var query = queryParamsHandler(req.query);
 
 	query.exec(function (err, entries) {
-		if (err) res.status(404).send(err.message);
+		if (err) return sendError(res, 404, err);
+		if (entries.length == 0)
+			res.sendStatus(204);
 		var result = {
 			count: entries.length,
 			entries: entries
@@ -61,7 +68,7 @@ sensorsController.find = function (req, res, next) {
 
 sensorsController.findById = function (req, res, next) {
 	Sensors.findById(req.params.id).exec(function (err, entry) {
-		if (err) return res.status(404).send(err.message);
+		if (err) return sendError(res, 404, err);
 		res.status(200).send(entry);
 	});
 };
@@ -71,6 +78,7 @@ sensorsController.saveEntry = function (req, res, next) {
 
 	// The topic name can be optionally prefixed with "/topics/".
 	var topic = "greenhouse";
+
 
 	if (entry.hygrometer < 1000) {
 		var payload = {
@@ -95,11 +103,11 @@ sensorsController.saveEntry = function (req, res, next) {
 	}
 
 
-	entry.saveEntry(function (err) {
+	entry.save(function (err) {
 		if (err) return sendError(res, 400, err);
 		console.log("Successfully created an employee.");
 		res.status(201).send(entry);
-	})
+	});
 };
 
 module.exports = sensorsController;
