@@ -134,15 +134,15 @@ var checkLastValues = function (fcmTopic) {
 					if (index > 0) {
 
 						if (index < array.length - 1) {
-							strLackings += ",";
+							strLackings += ", ";
 						} else {
-							strLackings += "and";
+							strLackings += " and ";
 						}
 					}
 					strLackings += needing.description;
-					strLackingsInfos += util.format("The %s is currently at %d%%\n", needing.description, needing.current);
+					strLackingsInfos += util.format("The %s is currently at %d%%...\n", needing.description, needing.current.toPrecision(1));
 				});
-				var notificationTitle = util.format("Your plant is needing some %s ! :(", strLackings);
+				var notificationTitle = util.format("%s needs some %s ! :(", "Plant 1", strLackings);
 				fcm.notify(fcmTopic, {
 						title: notificationTitle,
 						body: strLackingsInfos
