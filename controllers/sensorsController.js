@@ -7,6 +7,7 @@ var mongoose = require('mongoose');
 var Sensors = mongoose.model("Sensors");
 var fcm = require('../modules/fcm');
 var moment = require('moment');
+var utils = require('../utils');
 
 var sensorsController = {};
 
@@ -57,12 +58,6 @@ var queryParamsHandler = function (params) {
 	return Sensors.find(criterias, projection);
 };
 
-var sendError = function (res, httpCode, err) {
-	return res.status(httpCode).send({
-		error_msg: err.message
-	});
-};
-
 var checkLastValues = function (fcmTopic) {
 	// CHECKING PROGRESSION
 	var period = new Date().now - 1000 * 60 * 60 * periodHours;
@@ -71,7 +66,7 @@ var checkLastValues = function (fcmTopic) {
 	return queryParamsHandler({
 		sincetime: period.valueOf()
 	}).sort({date: 'ascending'}).exec(function (err, entries) {
-		if (err) return sendError(res, 500, err.message);
+		if (err) return utils.sendError(res, 500, err.message);
 
 		var lastEntry = entries[entries.length - 1];
 
@@ -169,8 +164,8 @@ sensorsController.find = function (req, res, next) {
 	var query = queryParamsHandler(req.query);
 
 	query.exec(function (err, entries) {
-		if (err) return sendError(res, 500, err);
-		if (entries.length == 0) return sendError(res, 204, {error_msg: "No content"});
+		if (err) return utils.sendError(res, 500, err);
+		if (entries.length == 0) return utils.sendError(res, 204, {error_msg: "No content"});
 
 		var result = {
 			count: entries.length,
@@ -182,8 +177,8 @@ sensorsController.find = function (req, res, next) {
 
 sensorsController.findById = function (req, res, next) {
 	Sensors.findById(req.params.id).exec(function (err, entry) {
-		if (err) return sendError(res, 404, err);
-		if (!entry) return sendError(res, 204, {error_msg: "No content"});
+		if (err) return utils.sendError(res, 404, err);
+		if (!entry) return utils.sendError(res, 204, {error_msg: "No content"});
 		res.status(200).send(entry);
 	});
 };
@@ -194,7 +189,7 @@ sensorsController.saveEntry = function (req, res, next) {
 	var fcmTopic = util.format("greenhouse-%s", req.app.get('build_config'));
 
 	entry.save(function (err) {
-		if (err) return sendError(res, 400, err);
+		if (err) return utils.sendError(res, 400, err);
 		console.log("Successfully created an employee.");
 
 		checkLastValues(fcmTopic);
