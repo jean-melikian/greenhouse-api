@@ -1,10 +1,9 @@
 var express = require('express');
-var router = express.Router();
+var router = express.Router({mergeParams: true});
 
 var controller = require('../controllers/sensorsController');
 
 
-/* GET users listing. */
 router
 	.get('/', controller.find)
 	.get('/:id', controller.findById)

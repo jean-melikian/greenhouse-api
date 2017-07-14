@@ -5,6 +5,10 @@
 var mongoose = require('mongoose');
 
 var SensorsSchema = new mongoose.Schema({
+	plant: {
+		type: String, // 'uuid' field
+		ref: 'Plant'
+	},
 	hygrometer: {
 		type: Number,
 		required: true
