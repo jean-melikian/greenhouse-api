@@ -1,13 +1,30 @@
 /**
  * Created by ozone on 04/07/2017.
  */
-require('../models/sensorsModel');
+var sensorsModel = require('../models/sensorsModel');
 const util = require('util');
 var mongoose = require('mongoose');
 var Sensors = mongoose.model("Sensors");
-var admin = require('firebase-admin');
+var fcm = require('../modules/fcm');
+var moment = require('moment');
+var utils = require('../utils');
+
 var sensorsController = {};
 
+const periodHours = 1;
+const notificationCooldownDurationMinutes = 1;
+const thresholds = {
+	hygrometer: 40,
+	luminosity: 35
+};
+
+const dayStart = moment('06:30', "HH:mm");
+const dayEnd = moment('20:30', "HH:mm");
+
+moment.locale('en');
+
+var lastNotificationMoment = null;
+var notificationCooldownMoment = null;
 /**
  *
  * @param params: req.query arguments
@@ -44,9 +61,108 @@ var queryParamsHandler = function (params) {
 	return Sensors.find(criterias, projection);
 };
 
-var sendError = function (res, httpCode, err) {
-	return res.status(httpCode).send({
-		error_msg: err.message
+var checkLastValues = function (fcmTopic) {
+	// CHECKING PROGRESSION
+	var period = new Date().now - 1000 * 60 * 60 * periodHours;
+	console.log(util.format("Checking entries since: %s", period.toString()));
+
+	return queryParamsHandler({
+		sincetime: period.valueOf()
+	}).sort({date: 'ascending'}).exec(function (err, entries) {
+		if (err) return utils.sendError(res, 500, err.message);
+
+		var lastEntry = entries[entries.length - 1];
+
+		var average = {
+			hygrometer: .0,
+			luminosity: .0
+		};
+
+		var hygroTmp = .0;
+		var lumTmp = .0;
+
+		console.log(entries);
+		// Processing average for the period
+		entries.forEach(function (entry, index, array) {
+			hygroTmp += (entry.hygrometer != 0) ? parseFloat(entry.hygrometer) : .0;
+			lumTmp += (entry.luminosity != 0) ? parseFloat(entry.luminosity) : .0;
+		});
+
+		var lackings = [];
+
+		hygroTmp /= entries.length;
+		lumTmp /= entries.length;
+
+		average.hygrometer = parseFloat(hygroTmp);
+		average.luminosity = parseFloat(lumTmp);
+
+		console.log(util.format("Averages: %j", average));
+
+
+		if (average.hygrometer <= thresholds.hygrometer) {
+			lackings.push({
+				description: "water",
+				current: lastEntry.hygrometer
+			});
+		}
+
+		if (average.luminosity <= thresholds.luminosity) {
+			lackings.push({
+				description: "luminosity",
+				current: lastEntry.luminosity
+			});
+		}
+
+		// Prepare and send notification only if needed and passed the notification interval
+
+		if (lackings.length > 0) {
+
+			console.log(util.format("lackings: %j", lackings));
+			var now = moment();
+
+			if (now.isBetween(dayStart, dayEnd)) {
+				if (now.isSameOrAfter(notificationCooldownMoment) || notificationCooldownMoment == null || notificationCooldownMoment == undefined) {
+					console.log(notificationCooldownMoment);
+
+					moment().subtract(notificationCooldownDurationMinutes, 'minutes');
+					console.log(util.format("lackings: %j", lackings));
+					var strLackings = "";
+					var strLackingsInfos = "";
+
+					lackings.forEach(function (needing, index, array) {
+						if (index > 0) {
+
+							if (index < array.length - 1) {
+								strLackings += ", ";
+							} else {
+								strLackings += " and ";
+							}
+						}
+						strLackings += needing.description;
+						strLackingsInfos += util.format("The %s is currently at %d%%...\n", needing.description, needing.current.toPrecision(1));
+					});
+					var notificationTitle = util.format("%s needs some %s ! :(", "Plant 1", strLackings);
+					fcm.notify(fcmTopic, {
+							title: notificationTitle,
+							body: strLackingsInfos
+						},
+						{
+							value: lastEntry.hygrometer.toString(),
+							since: Number(3600 * 48).toString()
+
+						}
+					);
+
+					lastNotificationMoment = moment();
+					notificationCooldownMoment = moment().add(notificationCooldownDurationMinutes, 'minutes');
+				} else {
+					console.log(util.format("The last notification has been sent %s. Notifications won't be thrown before %s!", lastNotificationMoment.fromNow(), notificationCooldownMoment.fromNow()));
+				}
+			} else {
+				console.log("It is night now, no notification shall be sent.");
+			}
+		}
+
 	});
 };
 
@@ -55,8 +171,8 @@ sensorsController.find = function (req, res, next) {
 	var query = queryParamsHandler(req.query);
 
 	query.exec(function (err, entries) {
-		if (err) return sendError(res, 500, err);
-		if (entries.length == 0) return sendError(res, 204, {error_msg: "No content"});
+		if (err) return utils.sendError(res, 500, err);
+		if (entries.length == 0) return utils.sendError(res, 204, {error_msg: "No content"});
 
 		var result = {
 			count: entries.length,
@@ -68,45 +184,23 @@ sensorsController.find = function (req, res, next) {
 
 sensorsController.findById = function (req, res, next) {
 	Sensors.findById(req.params.id).exec(function (err, entry) {
-		if (err) return sendError(res, 404, err);
-		if (!entry) return sendError(res, 204, {error_msg: "No content"});
+		if (err) return utils.sendError(res, 404, err);
+		if (!entry) return utils.sendError(res, 204, {error_msg: "No content"});
 		res.status(200).send(entry);
 	});
 };
 
 sensorsController.saveEntry = function (req, res, next) {
 	var entry = new Sensors(req.body);
-
 	// The topic name can be optionally prefixed with "/topics/".
-	var topic = "greenhouse";
-
-
-	if (entry.hygrometer < 1000) {
-		var payload = {
-			notification: {
-				title: "Hello, your plant needs some water ! :(",
-				body: "You haven't given water to your plant since 2 days..."
-			},
-			data: {
-				value: entry.hygrometer.toString(),
-				since: Number(3600 * 48).toString()
-			}
-		};
-
-		// Send a message to devices subscribed to the provided topic.
-		admin.messaging().sendToTopic(topic, payload)
-			.then(function (response) {
-				console.log("Successfully sent message:", response);
-			})
-			.catch(function (error) {
-				console.log("Error sending message:", error);
-			});
-	}
-
+	var fcmTopic = util.format("greenhouse-%s", req.app.get('build_config'));
 
 	entry.save(function (err) {
-		if (err) return sendError(res, 400, err);
+		if (err) return utils.sendError(res, 400, err);
 		console.log("Successfully created an employee.");
+
+		checkLastValues(fcmTopic);
+
 		res.status(201).send(entry);
 	});
 };
