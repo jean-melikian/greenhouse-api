@@ -15,8 +15,11 @@ const periodHours = 1;
 const notificationCooldownDurationMinutes = 1;
 const thresholds = {
 	hygrometer: 40,
-	luminosity: 40
+	luminosity: 35
 };
+
+const dayStart = moment('06:30', "HH:mm");
+const dayEnd = moment('20:30', "HH:mm");
 
 moment.locale('en');
 
@@ -117,42 +120,46 @@ var checkLastValues = function (fcmTopic) {
 			console.log(util.format("lackings: %j", lackings));
 			var now = moment();
 
-			if (now.isSameOrAfter(notificationCooldownMoment) || notificationCooldownMoment == null || notificationCooldownMoment == undefined) {
-				console.log(notificationCooldownMoment);
+			if (now.isBetween(dayStart, dayEnd)) {
+				if (now.isSameOrAfter(notificationCooldownMoment) || notificationCooldownMoment == null || notificationCooldownMoment == undefined) {
+					console.log(notificationCooldownMoment);
 
-				moment().subtract(notificationCooldownDurationMinutes, 'minutes');
-				console.log(util.format("lackings: %j", lackings));
-				var strLackings = "";
-				var strLackingsInfos = "";
+					moment().subtract(notificationCooldownDurationMinutes, 'minutes');
+					console.log(util.format("lackings: %j", lackings));
+					var strLackings = "";
+					var strLackingsInfos = "";
 
-				lackings.forEach(function (needing, index, array) {
-					if (index > 0) {
+					lackings.forEach(function (needing, index, array) {
+						if (index > 0) {
 
-						if (index < array.length - 1) {
-							strLackings += ", ";
-						} else {
-							strLackings += " and ";
+							if (index < array.length - 1) {
+								strLackings += ", ";
+							} else {
+								strLackings += " and ";
+							}
 						}
-					}
-					strLackings += needing.description;
-					strLackingsInfos += util.format("The %s is currently at %d%%...\n", needing.description, needing.current.toPrecision(1));
-				});
-				var notificationTitle = util.format("%s needs some %s ! :(", "Plant 1", strLackings);
-				fcm.notify(fcmTopic, {
-						title: notificationTitle,
-						body: strLackingsInfos
-					},
-					{
-						value: lastEntry.hygrometer.toString(),
-						since: Number(3600 * 48).toString()
+						strLackings += needing.description;
+						strLackingsInfos += util.format("The %s is currently at %d%%...\n", needing.description, needing.current.toPrecision(1));
+					});
+					var notificationTitle = util.format("%s needs some %s ! :(", "Plant 1", strLackings);
+					fcm.notify(fcmTopic, {
+							title: notificationTitle,
+							body: strLackingsInfos
+						},
+						{
+							value: lastEntry.hygrometer.toString(),
+							since: Number(3600 * 48).toString()
 
-					}
-				);
+						}
+					);
 
-				lastNotificationMoment = moment();
-				notificationCooldownMoment = moment().add(notificationCooldownDurationMinutes, 'minutes');
+					lastNotificationMoment = moment();
+					notificationCooldownMoment = moment().add(notificationCooldownDurationMinutes, 'minutes');
+				} else {
+					console.log(util.format("The last notification has been sent %s. Notifications won't be thrown before %s!", lastNotificationMoment.fromNow(), notificationCooldownMoment.fromNow()));
+				}
 			} else {
-				console.log(util.format("The last notification has been sent %s. Notifications won't be thrown before %s!", lastNotificationMoment.fromNow(), notificationCooldownMoment.fromNow()));
+				console.log("It is night now, no notification shall be sent.");
 			}
 		}
 

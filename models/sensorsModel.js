@@ -20,7 +20,7 @@ var SensorsSchema = new mongoose.Schema({
 })
 	.pre('save', function (next) {
 		this.hygrometer = 100 - (this.hygrometer * 100) / 1024;
-		this.luminosity = 100 - (this.luminosity * 100) / 1024;
+		this.luminosity = (this.luminosity * 100) / 1024;
 		next();
 	});
 
