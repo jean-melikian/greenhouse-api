@@ -88,7 +88,6 @@ var checkLastValues = function (fcmTopic) {
 		var airHumTmp = .0;
 		var temperatureTmp = .0;
 
-		console.log(entries);
 		// Processing average for the period
 		entries.forEach(function (entry, index, array) {
 			soilHumTmp += (entry.soil_humidity != 0) ? parseFloat(entry.soil_humidity) : .0;
@@ -114,33 +113,33 @@ var checkLastValues = function (fcmTopic) {
 
 		if (average.soil_humidity <= thresholds.soil_humidity) {
 			lackings.push({
-				name: "soil humidity",
-				description: "water",
-				current: lastEntry.soil_humidity
+				description: "soil humidity",
+				lacking: "water",
+				current: util.format("at %d%%", lastEntry.soil_humidity.toPrecision(1))
 			});
 		}
 
 		if (average.luminosity <= thresholds.luminosity) {
 			lackings.push({
-				name: "luminosity",
-				description: "light",
-				current: lastEntry.luminosity
+				description: "luminosity",
+				lacking: "light",
+				current: util.format("at %d%%", lastEntry.luminosity.toPrecision(1))
 			});
 		}
 
 		if (average.air_humidity <= thresholds.air_humidity) {
 			lackings.push({
-				name: "air humidity",
-				description: "more humid air",
-				current: lastEntry.air_humidity
+				description: "air humidity",
+				lacking: "more humid air",
+				current: util.format("at %d%%", lastEntry.air_humidity.toPrecision(1))
 			});
 		}
 
 		if (average.temperature <= thresholds.temperature) {
 			lackings.push({
-				name: "temperature",
-				description: "more heat",
-				current: lastEntry.temperature
+				description: "temperature",
+				lacking: "more heat",
+				current: util.format("at %d°C", lastEntry.temperature.toPrecision(1))
 			});
 		}
 
@@ -169,8 +168,8 @@ var checkLastValues = function (fcmTopic) {
 								strLackings += " and ";
 							}
 						}
-						strLackings += needing.description;
-						strLackingsInfos += util.format("The %s is currently at %d%%...\n", needing.name, needing.current.toPrecision(1));
+						strLackings += needing.lacking;
+						strLackingsInfos += util.format("The %s is currently %s...\n", needing.description, needing.current);
 					});
 					var notificationTitle = util.format("%s needs some %s ! :(", "Plant 1", strLackings);
 					fcm.notify(fcmTopic, {
@@ -224,7 +223,7 @@ sensorsController.findById = function (req, res, next) {
 sensorsController.saveEntry = function (req, res, next) {
 
 	var entry = new Sensors(req.body);
-	// The topic name can be optionally prefixed with "/topics/".
+	// The topic description can be optionally prefixed with "/topics/".
 	if (fcmTopic == undefined || fcmTopic == null)
 		fcmTopic = req.app.get('fcm_topic');
 

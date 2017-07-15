@@ -87,5 +87,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
-	debug('This server\'s build config name is ' + app.get('build_config'));
+	debug('This server\'s build config description is ' + app.get('build_config'));
 }
