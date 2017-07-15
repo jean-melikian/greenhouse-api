@@ -10,12 +10,15 @@ var moment = require('moment');
 var utils = require('../utils');
 
 var sensorsController = {};
+var fcmTopic = undefined; // Initialized by the saveEntry
 
 const periodHours = 1;
 const notificationCooldownDurationMinutes = 1;
 const thresholds = {
-	hygrometer: 40,
-	luminosity: 35
+	soil_humidity: 40,
+	luminosity: 35,
+	air_humidity: 40,
+	temperature: 15
 };
 
 const dayStart = moment('06:30', "HH:mm");
@@ -74,42 +77,70 @@ var checkLastValues = function (fcmTopic) {
 		var lastEntry = entries[entries.length - 1];
 
 		var average = {
-			hygrometer: .0,
-			luminosity: .0
+			soil_humidity: .0,
+			luminosity: .0,
+			air_humidity: .0,
+			temperature: .0
 		};
 
-		var hygroTmp = .0;
+		var soilHumTmp = .0;
 		var lumTmp = .0;
+		var airHumTmp = .0;
+		var temperatureTmp = .0;
 
 		console.log(entries);
 		// Processing average for the period
 		entries.forEach(function (entry, index, array) {
-			hygroTmp += (entry.hygrometer != 0) ? parseFloat(entry.hygrometer) : .0;
+			soilHumTmp += (entry.soil_humidity != 0) ? parseFloat(entry.soil_humidity) : .0;
 			lumTmp += (entry.luminosity != 0) ? parseFloat(entry.luminosity) : .0;
+			airHumTmp += (entry.air_humidity != 0) ? parseFloat(entry.air_humidity) : .0;
+			temperatureTmp += (entry.temperature != 0) ? parseFloat(entry.temperature) : .0;
 		});
 
 		var lackings = [];
 
-		hygroTmp /= entries.length;
+		soilHumTmp /= entries.length;
 		lumTmp /= entries.length;
+		airHumTmp /= entries.length;
+		temperatureTmp /= entries.length;
 
-		average.hygrometer = parseFloat(hygroTmp);
+		average.soil_humidity = parseFloat(soilHumTmp);
 		average.luminosity = parseFloat(lumTmp);
+		average.air_humidity = parseFloat(airHumTmp);
+		average.temperature = parseFloat(temperatureTmp);
 
 		console.log(util.format("Averages: %j", average));
 
 
-		if (average.hygrometer <= thresholds.hygrometer) {
+		if (average.soil_humidity <= thresholds.soil_humidity) {
 			lackings.push({
+				name: "soil humidity",
 				description: "water",
-				current: lastEntry.hygrometer
+				current: lastEntry.soil_humidity
 			});
 		}
 
 		if (average.luminosity <= thresholds.luminosity) {
 			lackings.push({
-				description: "luminosity",
+				name: "luminosity",
+				description: "light",
 				current: lastEntry.luminosity
+			});
+		}
+
+		if (average.air_humidity <= thresholds.air_humidity) {
+			lackings.push({
+				name: "air humidity",
+				description: "more humid air",
+				current: lastEntry.air_humidity
+			});
+		}
+
+		if (average.temperature <= thresholds.temperature) {
+			lackings.push({
+				name: "temperature",
+				description: "more heat",
+				current: lastEntry.temperature
 			});
 		}
 
@@ -139,7 +170,7 @@ var checkLastValues = function (fcmTopic) {
 							}
 						}
 						strLackings += needing.description;
-						strLackingsInfos += util.format("The %s is currently at %d%%...\n", needing.description, needing.current.toPrecision(1));
+						strLackingsInfos += util.format("The %s is currently at %d%%...\n", needing.name, needing.current.toPrecision(1));
 					});
 					var notificationTitle = util.format("%s needs some %s ! :(", "Plant 1", strLackings);
 					fcm.notify(fcmTopic, {
@@ -147,7 +178,7 @@ var checkLastValues = function (fcmTopic) {
 							body: strLackingsInfos
 						},
 						{
-							value: lastEntry.hygrometer.toString(),
+							value: lastEntry.soil_humidity.toString(),
 							since: Number(3600 * 48).toString()
 
 						}
@@ -191,9 +222,11 @@ sensorsController.findById = function (req, res, next) {
 };
 
 sensorsController.saveEntry = function (req, res, next) {
+
 	var entry = new Sensors(req.body);
 	// The topic name can be optionally prefixed with "/topics/".
-	var fcmTopic = util.format("greenhouse-%s", req.app.get('build_config'));
+	if (fcmTopic == undefined || fcmTopic == null)
+		fcmTopic = req.app.get('fcm_topic');
 
 	entry.save(function (err) {
 		if (err) return utils.sendError(res, 400, err);

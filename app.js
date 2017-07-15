@@ -26,6 +26,7 @@ var serviceAccount = require(fcmSecretFilePath);
 const fcmDbUrl = "https://greenhouse-20729.firebaseio.com";
 
 var mongoUri = util.format('mongodb://localhost/greenhouse-%s', app.get('build_config'));
+app.set('fcm_topic', util.format("greenhouse-%s", app.get('build_config')));
 
 // -------------------------------------
 // - - - MAIN CODE - - - - - - - - - - -
