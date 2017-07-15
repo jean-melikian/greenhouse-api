@@ -15,7 +15,12 @@ describe("Server launch test", function () {
 	});
 	it("should return 201 CREATED", function(done) {
 		server.post("/sensors")
-			.send({"hygrometer": "999", "luminosity": "1024"})
+			.send({
+				"soil_humidity": "999",
+				"luminosity": "1024",
+				"air_humidity": "15",
+				"temperature": "19"
+			})
 			.expect("Content-type", /application\/json/)
 			.expect(201, done)
 		});

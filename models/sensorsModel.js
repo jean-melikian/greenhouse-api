@@ -5,11 +5,19 @@
 var mongoose = require('mongoose');
 
 var SensorsSchema = new mongoose.Schema({
-	hygrometer: {
+	soil_humidity: {
 		type: Number,
 		required: true
 	},
 	luminosity: {
+		type: Number,
+		required: true
+	},
+	air_humidity: {
+		type: Number,
+		required: true
+	},
+	temperature: {
 		type: Number,
 		required: true
 	},
@@ -19,7 +27,7 @@ var SensorsSchema = new mongoose.Schema({
 	}
 })
 	.pre('save', function (next) {
-		this.hygrometer = 100 - (this.hygrometer * 100) / 1024;
+		this.soil_humidity = 100 - (this.soil_humidity * 100) / 1024;
 		this.luminosity = (this.luminosity * 100) / 1024;
 		next();
 	});
