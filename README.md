@@ -3,7 +3,7 @@ Powered by Node.js, Express, MongoDB, Mongoose and others
 
 [![Build Status](http://jenkins.ozoneprojects.fr/job/greenhouse-prod/badge/icon)](http://jenkins.ozoneprojects.fr/job/greenhouse-prod/)
 
-[## Main project]()
+## [Get to the main project repository](https://github.com/ozonePowered/greenhouse)
 
 ## Useful links
 [Mongoose]( https://www.djamware.com/post/58b27ce080aca72c54645983/how-to-create-nodejs-expressjs-and-mongodb-crud-web-application)
