@@ -66,11 +66,11 @@ var queryParamsHandler = function (params) {
 
 var checkLastValues = function (fcmTopic) {
 	// CHECKING PROGRESSION
-	var period = new Date().now - 1000 * 60 * 60 * periodHours;
+	var period = moment().subtract(periodHours, 'hours');
 	console.log(util.format("Checking entries since: %s", period.toString()));
 
 	return queryParamsHandler({
-		sincetime: period.valueOf()
+		sincetime: period.ISO_8601
 	}).sort({date: 'ascending'}).exec(function (err, entries) {
 		if (err) return utils.sendError(res, 500, err.message);
 
@@ -111,7 +111,8 @@ var checkLastValues = function (fcmTopic) {
 		console.log(util.format("Averages: %j", average));
 
 
-		if (average.soil_humidity <= thresholds.soil_humidity) {
+		if (average.soil_humidity <= thresholds.soil_humidity
+			&& lastEntry.soil_humidity <= thresholds.soil_humidity) {
 			lackings.push({
 				description: "soil humidity",
 				lacking: "water",
@@ -119,7 +120,8 @@ var checkLastValues = function (fcmTopic) {
 			});
 		}
 
-		if (average.luminosity <= thresholds.luminosity) {
+		if (average.luminosity <= thresholds.luminosity
+			&& lastEntry.luminosity <= thresholds.luminosity) {
 			lackings.push({
 				description: "luminosity",
 				lacking: "light",
@@ -127,7 +129,8 @@ var checkLastValues = function (fcmTopic) {
 			});
 		}
 
-		if (average.air_humidity <= thresholds.air_humidity) {
+		if (average.air_humidity <= thresholds.air_humidity
+			&& lastEntry.air_humidity <= thresholds.air_humidity) {
 			lackings.push({
 				description: "air humidity",
 				lacking: "more humid air",
@@ -135,7 +138,8 @@ var checkLastValues = function (fcmTopic) {
 			});
 		}
 
-		if (average.temperature <= thresholds.temperature) {
+		if (average.temperature <= thresholds.temperature
+			&& lastEntry.temperature <= thresholds.temperature) {
 			lackings.push({
 				description: "temperature",
 				lacking: "more heat",
